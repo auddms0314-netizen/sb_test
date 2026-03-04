@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Act2 TF 킥오프</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#0B0F1C; --card:#131929; --border:#1C2440;
+  --blue:#4F8EFF; --green:#2DD4A0; --orange:#FF6B47;
+  --yellow:#F5C842; --text:#E4ECFF; --muted:#4A5580;
+}
+body { background:var(--bg); color:var(--text); font-family:'Noto Sans KR',sans-serif; }
+
+/* NAV */
+.nav { display:flex; gap:6px; padding:20px 40px; position:sticky; top:0; background:rgba(11,15,28,0.95); backdrop-filter:blur(10px); z-index:100; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.nav-btn { padding:7px 14px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; font-family:'Noto Sans KR',sans-serif; cursor:pointer; transition:.2s; }
+.nav-btn:hover, .nav-btn.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+
+/* SECTION */
+.section { min-height:100vh; padding:80px 40px; display:none; max-width:900px; margin:0 auto; }
+.section.visible { display:block; }
+
+/* HERO */
+.hero { text-align:center; padding:120px 40px; }
+.hero-label { font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.2em; color:var(--muted); text-transform:uppercase; margin-bottom:20px; }
+.hero h1 { font-size:48px; font-weight:900; line-height:1.15; margin-bottom:16px; }
+.hero h1 span { color:var(--blue); }
+.hero p { font-size:15px; color:var(--muted); font-weight:300; line-height:1.8; max-width:520px; margin:0 auto 40px; }
+.hero-meta { display:flex; justify-content:center; gap:32px; }
+.hero-meta div { text-align:center; }
+.hero-meta .num { font-size:32px; font-weight:900; color:var(--blue); }
+.hero-meta .lab { font-size:11px; color:var(--muted); margin-top:4px; }
+
+/* SECTION TITLE */
+.sec-eyebrow { font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.15em; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
+.sec-title { font-size:30px; font-weight:800; margin-bottom:8px; }
+.sec-sub { font-size:14px; color:var(--muted); font-weight:300; line-height:1.7; margin-bottom:40px; }
+
+/* BAR CHART */
+.bar-list { display:flex; flex-direction:column; gap:14px; margin-bottom:32px; }
+.bar-item { }
+.bar-label { display:flex; justify-content:space-between; margin-bottom:6px; }
+.bar-label span:first-child { font-size:14px; font-weight:500; }
+.bar-label span:last-child { font-size:13px; font-family:'Space Mono',monospace; color:var(--blue); }
+.bar-track { background:var(--border); border-radius:4px; height:10px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:4px; position:relative; animation:grow .8s ease forwards; }
+@keyframes grow { from{width:0} }
+.bar-fill.b1 { background:var(--blue); }
+.bar-fill.b2 { background:var(--green); }
+.bar-fill.b3 { background:var(--orange); }
+.bar-fill.b4 { background:var(--yellow); }
+.bar-fill.b5 { background:#A78BFA; }
+
+/* INSIGHT BOX */
+.insight { background:rgba(79,142,255,.1); border:1px solid rgba(79,142,255,.3); border-radius:12px; padding:20px 24px; margin:24px 0; }
+.insight .quote { font-size:16px; font-weight:700; line-height:1.6; color:var(--text); }
+.insight .quote::before { content:'"'; font-size:24px; color:var(--blue); line-height:0; vertical-align:-.3em; margin-right:4px; }
+
+/* ROLE GRID */
+.role-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:28px; }
+.role-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; display:flex; align-items:center; gap:16px; }
+.role-num { font-size:36px; font-weight:900; }
+.role-num.rn1 { color:var(--blue); }
+.role-num.rn2 { color:var(--green); }
+.role-num.rn3 { color:var(--orange); }
+.role-num.rn4 { color:var(--yellow); }
+.role-info .type { font-size:15px; font-weight:700; margin-bottom:4px; }
+.role-info .names { font-size:11px; color:var(--muted); line-height:1.6; }
+
+/* RISK BOX */
+.risk { background:rgba(255,107,71,.08); border:1px solid rgba(255,107,71,.3); border-radius:12px; padding:20px 24px; margin:24px 0; }
+.risk .risk-title { font-size:13px; font-family:'Space Mono',monospace; color:var(--orange); letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; }
+.risk .risk-body { font-size:15px; font-weight:600; line-height:1.6; }
+
+/* BRIDGE */
+.bridge { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:32px; margin:32px 0; }
+.bridge .logic { display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; margin-bottom:24px; }
+.logic-item { background:rgba(79,142,255,.12); border:1px solid rgba(79,142,255,.3); border-radius:8px; padding:10px 18px; font-size:14px; font-weight:600; color:var(--blue); }
+.logic-arrow { color:var(--muted); font-size:18px; }
+.logic-result { background:var(--blue); border-radius:8px; padding:10px 18px; font-size:14px; font-weight:700; color:#fff; }
+.bridge-quote { text-align:center; font-size:17px; font-weight:700; line-height:1.7; color:var(--text); }
+
+/* DECLARATION */
+.decl-section { margin-bottom:36px; }
+.decl-heading { display:flex; align-items:center; gap:12px; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+.decl-badge { padding:4px 12px; border-radius:20px; font-size:11px; font-family:'Space Mono',monospace; font-weight:700; letter-spacing:.05em; }
+.badge-v { background:rgba(79,142,255,.15); color:var(--blue); }
+.badge-r { background:rgba(45,212,160,.15); color:var(--green); }
+.badge-g { background:rgba(255,107,71,.15); color:var(--orange); }
+.badge-o { background:rgba(245,200,66,.15); color:var(--yellow); }
+.decl-heading h3 { font-size:20px; font-weight:800; }
+
+.belief-list { display:flex; flex-direction:column; gap:12px; }
+.belief-item { display:flex; gap:14px; align-items:flex-start; }
+.belief-num { width:26px; height:26px; background:rgba(79,142,255,.15); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--blue); flex-shrink:0; margin-top:1px; }
+.belief-text { font-size:14px; line-height:1.7; font-weight:400; }
+
+.rule-block { margin-bottom:20px; }
+.rule-title { font-size:14px; font-weight:700; color:var(--green); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.rule-items { display:flex; flex-direction:column; gap:8px; padding-left:4px; }
+.rule-item { font-size:13px; color:#B0BCDC; line-height:1.6; padding-left:16px; position:relative; }
+.rule-item::before { content:'·'; position:absolute; left:4px; color:var(--green); }
+
+.goal-cards { display:flex; flex-direction:column; gap:16px; }
+.goal-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px 22px; }
+.goal-card-title { font-size:15px; font-weight:700; color:var(--orange); margin-bottom:12px; }
+.goal-items { display:flex; flex-direction:column; gap:7px; }
+.goal-item { font-size:13px; color:#B0BCDC; padding-left:16px; position:relative; line-height:1.6; }
+.goal-item::before { content:'→'; position:absolute; left:0; color:var(--orange); font-size:11px; top:2px; }
+
+.ops-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+.ops-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+.ops-card-title { font-size:13px; font-weight:700; color:var(--yellow); margin-bottom:12px; font-family:'Space Mono',monospace; letter-spacing:.05em; }
+.ops-steps { display:flex; flex-direction:column; gap:8px; }
+.ops-step { display:flex; gap:10px; align-items:flex-start; }
+.step-dot { width:20px; height:20px; background:rgba(245,200,66,.15); border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:var(--yellow); flex-shrink:0; }
+.step-txt { font-size:13px; color:#B0BCDC; line-height:1.5; }
+
+/* CONFIRM */
+.confirm-flow { display:flex; flex-direction:column; gap:14px; margin:28px 0; }
+.cf-row { display:flex; gap:14px; align-items:center; }
+.cf-bad { background:rgba(255,107,71,.1); border:1px solid rgba(255,107,71,.3); border-radius:8px; padding:12px 16px; flex:1; font-size:13px; color:#FF9580; }
+.cf-good { background:rgba(45,212,160,.1); border:1px solid rgba(45,212,160,.3); border-radius:8px; padding:12px 16px; flex:1; font-size:13px; color:var(--green); }
+.cf-label { font-size:11px; font-family:'Space Mono',monospace; width:24px; text-align:center; }
+.final-box { background:linear-gradient(135deg,rgba(79,142,255,.15),rgba(45,212,160,.15)); border:1px solid rgba(79,142,255,.4); border-radius:16px; padding:32px; text-align:center; margin-top:32px; }
+.final-box .final-q { font-size:22px; font-weight:800; margin-bottom:12px; }
+.final-box .final-sub { font-size:14px; color:var(--muted); line-height:1.7; }
+
+/* FOOTER */
+.footer { text-align:center; padding:60px 20px; color:var(--muted); font-size:12px; font-family:'Space Mono',monospace; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="show('s0',this)">🏠 시작</button>
+  <button class="nav-btn" onclick="show('s1',this)">📊 1. TF 데이터 공유</button>
+  <button class="nav-btn" onclick="show('s2',this)">🔗 2. 솔루션</button>
+  <button class="nav-btn" onclick="show('s3',this)">📋 3. 운영규칙</button>
+</nav>
+
+<!-- ① HERO -->
+<div id="s0" class="section visible" style="min-height:100vh;display:flex;align-items:center;justify-content:center;max-width:100%;">
+<div class="hero">
+  <div class="hero-label">Act2 TF · Kickoff</div>
+  <h1>우리는 <span>어떤 팀</span>인가?<br>그리고 어떻게 <span>일할 것</span>인가?</h1>
+  <p>14명의 응답 데이터를 기반으로<br>우리 팀의 패턴, 강점, 리스크를 분석했습니다.</p>
+  <div class="hero-meta">
+    <div><div class="num">14</div><div class="lab">TF 구성원</div></div>
+    <div><div class="num">3</div><div class="lab">핵심 질문</div></div>
+    <div><div class="num">42</div><div class="lab">수집된 응답</div></div>
+  </div>
+</div>
+</div>
+
+<!-- ② DATA -->
+<div id="s1" class="section">
+  <div class="sec-eyebrow">Section 01 · 10~15분</div>
+  <div class="sec-title">TF 데이터 공유</div>
+  <div class="sec-sub">우리가 어떤 팀인지 숫자로 확인합니다.<br>"잘 정리된 말"이 아닌, 패턴과 리스크를 봅니다.</div>
+
+  <!-- 차트 1 -->
+  <div style="margin-bottom:40px;">
+    <div class="sec-eyebrow" style="margin-bottom:16px;">📊 ① 우리가 가장 많이 말한 것</div>
+    <div class="bar-list">
+      <div class="bar-item">
+        <div class="bar-label"><span>경청 · 상호 존중</span><span>11명 (79%)</span></div>
+        <div class="bar-track"><div class="bar-fill b1" style="width:79%"></div></div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>실행 · 구조화</span><span>11명 (79%)</span></div>
+        <div class="bar-track"><div class="bar-fill b2" style="width:79%"></div></div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>협업 · 연결</span><span>10명 (71%)</span></div>
+        <div class="bar-track"><div class="bar-fill b3" style="width:71%"></div></div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>목표 공유 · 책임감</span><span>8명 (57%)</span></div>
+        <div class="bar-track"><div class="bar-fill b4" style="width:57%"></div></div>
+      </div>
+      <div class="bar-item">
+        <div class="bar-label"><span>개인 성장 · 역량 향상</span><span>7명 (50%)</span></div>
+        <div class="bar-track"><div class="bar-fill b5" style="width:50%"></div></div>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="quote">우리는 결과를 만들고 싶어 하지만,<br>동시에 안전한 토론을 원하고 있습니다.</div>
+    </div>
+  </div>
+
+  <!-- 차트 2 -->
+  <div style="margin-bottom:40px;">
+    <div class="sec-eyebrow" style="margin-bottom:16px;">📊 ② 역할 성향 분포</div>
+    <div class="role-grid">
+      <div class="role-card">
+        <div class="role-num rn1">7</div>
+        <div class="role-info">
+          <div class="type">🌉 가교형</div>
+          <div class="names">찬드래 · 셰프 · 황인성 · 여찬동<br>새나 · 양정연 · 여명</div>
+        </div>
+      </div>
+      <div class="role-card">
+        <div class="role-num rn2">3</div>
+        <div class="role-info">
+          <div class="type">📝 기획형</div>
+          <div class="names">양정연 · 변예솜 · 양기현</div>
+        </div>
+      </div>
+      <div class="role-card">
+        <div class="role-num rn3">2</div>
+        <div class="role-info">
+          <div class="type">🏗️ 리더형</div>
+          <div class="names">이제선 · 찬드래</div>
+        </div>
+      </div>
+      <div class="role-card">
+        <div class="role-num rn4">2</div>
+        <div class="role-info">
+          <div class="type">⚡ 추진형</div>
+          <div class="names">에끌 · 볼트</div>
+        </div>
+      </div>
+    </div>
+    <div class="insight" style="background:rgba(45,212,160,.08);border-color:rgba(45,212,160,.3);">
+      <div class="quote" style="color:var(--text);">우리는 연결과 조율에는 <span style="color:var(--green)">강하지만</span>,<br>결정과 추진은 <span style="color:var(--orange)">약할 수 있습니다.</span></div>
+    </div>
+  </div>
+
+  <!-- 리스크 -->
+  <div>
+    <div class="sec-eyebrow" style="margin-bottom:16px;">📊 ③ 리스크 예측</div>
+    <div class="risk">
+      <div class="risk-title">⚠ Data-based Risk Forecast</div>
+      <div class="risk-body">"토론은 많고 결정은 늦어질 가능성이 있습니다."</div>
+    </div>
+    
+  </div>
+</div>
+
+<!-- ③ 당위성 -->
+<div id="s2" class="section">
+  <div class="sec-eyebrow">Section 02</div>
+  <div class="sec-title">운영 규칙이 필요합니다</div>
+
+  <div class="bridge">
+    <div class="logic">
+      <div class="logic-item">우리는 실행을 원한다</div>
+      <div class="logic-arrow">+</div>
+      <div class="logic-item">우리는 관계를 중시한다</div>
+      <div class="logic-arrow">→</div>
+      <div class="logic-result">실행을 위한 구조가 필요하다</div>
+    </div>
+    <div class="bridge-quote">
+      "우리는 좋은 의도를 가진 팀입니다.<br>
+      하지만 <span style="color:var(--orange)">구조 없이 가면, 좋은 의도는 사라질 수 있습니다.</span>"
+    </div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:24px;">   
+      <span style="color:var(--green)">"여러분의 응답 데이터를 기반으로 운영 초안을 만들어봤습니다."</span>  
+    </div>
+  
+  </div>
+</div>
+
+<!-- ④ 운영규칙 -->
+<div id="s3" class="section">
+  <div class="sec-eyebrow">Section 03</div>
+  <div class="sec-title">SB TF 운영 규칙</div>
+  <div class="sec-sub">여러분의 응답 데이터를 기반으로 만든 초안입니다.</div>
+
+  <!-- I. 가치 -->
+  <div class="decl-section">
+    <div class="decl-heading">
+      <span class="decl-badge badge-v">Ⅰ · Value</span>
+      <h3>우리가 믿는 것</h3>
+    </div>
+    <div style="font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:20px;font-style:italic;padding:16px 20px;background:var(--card);border-radius:10px;border-left:3px solid var(--blue);">
+      우리는 이 TF가 단순한 논의 모임이 아니라<br>SB의 협업 방식을 실험하고 설계하는 팀이라고 믿는다.
+    </div>
+    <div class="belief-list">
+      <div class="belief-item"><div class="belief-num">1</div><div class="belief-text">우리는 부서가 아닌 <strong>'회사 전체'</strong> 관점에서 판단한다.</div></div>
+      <div class="belief-item"><div class="belief-num">2</div><div class="belief-text">우리는 직급이 아닌 <strong>'논리'</strong>로 토론한다.</div></div>
+      <div class="belief-item"><div class="belief-num">3</div><div class="belief-text">우리는 말할 수 있는 환경이 결과를 만든다고 믿는다.</div></div>
+    </div>
+    <div style="margin-top:16px;padding:12px 18px;background:rgba(79,142,255,.08);border-radius:8px;font-size:14px;font-weight:700;color:var(--blue);text-align:center;">
+      안전함은 전제이고, 실행은 목표다.
+    </div>
+  </div>
+
+  <!-- II. 규칙 -->
+  <div class="decl-section">
+    <div class="decl-heading">
+      <span class="decl-badge badge-r">Ⅱ · Rule</span>
+      <h3>우리가 지킬 것</h3>
+    </div>
+    <div class="rule-block">
+      <div class="rule-title">1️⃣ 경청과 존중</div>
+      <div class="rule-items">
+        <div class="rule-item">발언을 끊지 않는다.</div>
+        <div class="rule-item">사람을 평가하지 않고, 아이디어를 토론한다.</div>
+        <div class="rule-item">반대 의견 1개 이상은 반드시 검토한다.</div>
+      </div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-title">2️⃣ 적극적 의견 개진</div>
+      <div class="rule-items">
+        <div class="rule-item">"동의합니다"로 끝내지 않는다.</div>
+        <div class="rule-item">회의 전 최소 1회 의견을 준비한다.</div>
+        <div class="rule-item">침묵은 동의가 아니다.</div>
+      </div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-title">3️⃣ 실행 책임 원칙</div>
+      <div class="rule-items">
+        <div class="rule-item">모든 논의는 담당자와 기한을 정한다.</div>
+        <div class="rule-item">실행되지 않은 안건은 다음 회의에서 점검한다.</div>
+        <div class="rule-item">'좋은 아이디어'는 2주 안에 테스트 여부를 결정한다.</div>
+      </div>
+    </div>
+    <div class="rule-block">
+      <div class="rule-title">4️⃣ 회사 대표 원칙</div>
+      <div class="rule-items">
+        <div class="rule-item">"우리 팀에 좋은가?"가 아니라 "회사 전체에 좋은가?"를 기준으로 발언한다.</div>
+        <div class="rule-item">부서 이해관계는 투명하게 공유한다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- III. 목표 -->
+  <div class="decl-section">
+    <div class="decl-heading">
+      <span class="decl-badge badge-g">Ⅲ · Goal</span>
+      <h3>우리가 만들 것</h3>
+    </div>
+    <div style="font-size:14px;font-weight:700;color:var(--orange);margin-bottom:18px;">우리는 반드시 결과를 남긴다.</div>
+    <div class="goal-cards">
+      <div class="goal-card">
+        <div class="goal-card-title">🎯 1. 1개 이상의 과제 설계 및 파일럿 실행</div>
+        <div class="goal-items">
+          <div class="goal-item">2개 이상 부서 참여</div>
+          <div class="goal-item">문서화 완료</div>
+          <div class="goal-item">적용 후 피드백 수집</div>
+          <div class="goal-item">개선안 도출 후 최종 프로세스 정리</div>
+        </div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-card-title">🎯 2. 전사 공감도 검증</div>
+        <div class="goal-items">
+          <div class="goal-item">TF 결과 전사 공유 및 설문/피드백 수집</div>
+          <div class="goal-item">긍정 응답 70% 이상 목표</div>
+        </div>
+      </div>
+      <div class="goal-card">
+        <div class="goal-card-title">🎯 3. TF 구성원 성장 체감 80% 이상</div>
+        <div class="goal-items">
+          <div class="goal-item">TF 종료 시 자체 평가 실시</div>
+          <div class="goal-item">"내 역량이 한 단계 성장했다" 응답 80% 이상</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IV. 운영 방식 -->
+  <div class="decl-section">
+    <div class="decl-heading">
+      <span class="decl-badge badge-o">Ⅳ · Operations</span>
+      <h3>우리의 운영 방식</h3>
+    </div>
+    <div class="ops-grid">
+      <div class="ops-card">
+        <div class="ops-card-title">📌 회의 구조</div>
+        <div class="ops-steps">
+          <div class="ops-step"><div class="step-dot">1</div><div class="step-txt">안건 사전 공유</div></div>
+          <div class="ops-step"><div class="step-dot">2</div><div class="step-txt">토론</div></div>
+          <div class="ops-step"><div class="step-dot">3</div><div class="step-txt">결정</div></div>
+          <div class="ops-step"><div class="step-dot">4</div><div class="step-txt">실행 담당 지정</div></div>
+          <div class="ops-step"><div class="step-dot">5</div><div class="step-txt">다음 회의 점검</div></div>
+        </div>
+        <div style="margin-top:14px;padding:10px;background:rgba(255,107,71,.1);border-radius:8px;font-size:12px;color:var(--orange);text-align:center;font-weight:600;">결정 없는 회의는 실패로 간주한다</div>
+      </div>
+      <div class="ops-card">
+        <div class="ops-card-title">📌 의사결정 & 갈등</div>
+        <div class="ops-steps">
+          <div class="ops-step"><div class="step-dot" style="background:rgba(245,200,66,.15);color:var(--yellow);">✓</div><div class="step-txt">충분한 토론 후 70% 이상 동의 시 결정</div></div>
+          <div class="ops-step"><div class="step-dot" style="background:rgba(245,200,66,.15);color:var(--yellow);">✓</div><div class="step-txt">의견이 갈릴 경우 TF 리더가 최종 결정</div></div>
+          <div class="ops-step"><div class="step-dot" style="background:rgba(255,107,71,.15);color:var(--orange);">!</div><div class="step-txt">감정은 숨기지 말되, 공개적으로 해결한다</div></div>
+          <div class="ops-step"><div class="step-dot" style="background:rgba(255,107,71,.15);color:var(--orange);">!</div><div class="step-txt">회의 밖에서 뒷말하지 않는다</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Act2 TF · Kickoff Deck · Based on 14 member responses</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('visible');
+  btn.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>
