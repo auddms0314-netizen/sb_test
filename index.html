@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>평가자 편향 보정 매트릭스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F5F8;
+    --card:#FFFFFF;
+    --ink:#141B24;
+    --ink-soft:#4C5768;
+    --ink-faint:#8A93A3;
+    --line:#E2E6ED;
+    --line-strong:#CBD2DE;
+    --blue-dark:#1E3A5F;   /* 3명 */
+    --blue-mid:#5B8DBE;    /* 2명 */
+    --gray-light:#C7CCD3;  /* 1명 */
+    --gold:#B4872E;
+    --gold-tint:rgba(180,135,46,0.07);
+    --red-tint:rgba(178,64,64,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Noto Sans KR', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:40px 24px 80px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* header */
+  .eyebrow{
+    font-family:'Manrope',sans-serif;
+    font-weight:700;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    font-size:11.5px;
+    color:var(--gold);
+    margin:0 0 10px;
+  }
+  h1{
+    font-size:30px;
+    font-weight:900;
+    letter-spacing:-.01em;
+    margin:0 0 12px;
+    line-height:1.25;
+  }
+  .sub{
+    font-size:14.5px;
+    color:var(--ink-soft);
+    max-width:720px;
+    line-height:1.7;
+    margin:0 0 6px;
+  }
+  .note{
+    font-size:12.5px;
+    color:var(--ink-faint);
+    max-width:720px;
+    line-height:1.6;
+  }
+
+  /* stat strip */
+  .stats{
+    display:flex;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    margin:28px 0 26px;
+  }
+  .stat{
+    flex:1;
+    background:var(--card);
+    padding:16px 20px;
+  }
+  .stat .num{
+    font-family:'Manrope',sans-serif;
+    font-weight:800;
+    font-size:24px;
+    letter-spacing:-.02em;
+  }
+  .stat .lbl{
+    font-size:11.5px;
+    color:var(--ink-faint);
+    margin-top:3px;
+  }
+  .stat.tier .num{display:flex;align-items:center;gap:7px;}
+  .dot-swatch{width:10px;height:10px;border-radius:50%;display:inline-block;}
+
+  /* main grid: matrix + side panel */
+  .main{
+    display:grid;
+    grid-template-columns:1fr 300px;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width:900px){
+    .main{grid-template-columns:1fr;}
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:22px 22px 18px;
+  }
+
+  .card h2{
+    font-size:15px;
+    font-weight:700;
+    margin:0 0 2px;
+  }
+  .card .cardsub{
+    font-size:12px;
+    color:var(--ink-faint);
+    margin-bottom:14px;
+  }
+
+  /* legend / filter panel */
+  .legend-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .chip{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    border:1px solid var(--line-strong);
+    background:#fff;
+    padding:6px 12px 6px 9px;
+    border-radius:999px;
+    font-size:12.5px;
+    font-weight:500;
+    cursor:pointer;
+    user-select:none;
+    transition:all .15s ease;
+  }
+  .chip.off{
+    opacity:.35;
+  }
+  .chip:hover{border-color:var(--ink-faint);}
+  .card-head-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:14px;
+  }
+  .card-head-row h2{margin-bottom:2px;}
+  .card-head-row .cardsub{margin-bottom:0;}
+
+  .switch-row{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    cursor:pointer;
+    user-select:none;
+    flex-shrink:0;
+    padding-top:2px;
+  }
+  .switch{
+    position:relative;
+    display:inline-block;
+    width:40px;
+    height:22px;
+    flex-shrink:0;
+  }
+  .switch input{
+    opacity:0;
+    width:0;
+    height:0;
+  }
+  .slider{
+    position:absolute;
+    inset:0;
+    background:#D8DCE3;
+    border-radius:999px;
+    transition:background .18s ease;
+  }
+  .slider::before{
+    content:"";
+    position:absolute;
+    height:16px;
+    width:16px;
+    left:3px;
+    top:3px;
+    background:#fff;
+    border-radius:50%;
+    box-shadow:0 1px 3px rgba(0,0,0,.25);
+    transition:transform .18s ease;
+  }
+  .switch input:checked + .slider{
+    background:#2F7DE1;
+  }
+  .switch input:checked + .slider::before{
+    transform:translateX(18px);
+  }
+  .switch input:focus-visible + .slider{
+    outline:2px solid var(--blue-mid);
+    outline-offset:2px;
+  }
+  .switch-label{
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ink);
+  }
+
+  .field-group{margin-bottom:16px;}
+  .field-group label{
+    display:block;
+    font-size:11.5px;
+    color:var(--ink-faint);
+    margin-bottom:6px;
+    font-weight:600;
+  }
+  .toggle-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    color:var(--ink);
+    cursor:pointer;
+    user-select:none;
+  }
+  .toggle-row input[type="checkbox"]{
+    width:16px;
+    height:16px;
+    accent-color:var(--blue-dark);
+    cursor:pointer;
+  }
+  select, input[type="text"]{
+    width:100%;
+    padding:9px 11px;
+    border:1px solid var(--line-strong);
+    border-radius:9px;
+    font-size:13px;
+    font-family:'Noto Sans KR',sans-serif;
+    background:#fff;
+    color:var(--ink);
+  }
+  select:focus, input:focus{outline:2px solid var(--blue-mid); outline-offset:1px;}
+
+  .hint-box{
+    background:#F8F6F0;
+    border:1px solid #EBE3D0;
+    border-radius:10px;
+    padding:12px 13px;
+    font-size:12px;
+    line-height:1.6;
+    color:#6B5A2E;
+  }
+
+  /* svg matrix */
+  svg{width:100%;height:auto;display:block;}
+  .zone-label{
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:11.5px;
+    font-weight:600;
+    fill:var(--ink-faint);
+  }
+  .axis-label{
+    font-family:'Manrope',sans-serif;
+    font-size:12px;
+    font-weight:700;
+    fill:var(--ink-soft);
+    letter-spacing:.02em;
+  }
+  .tick-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    fill:var(--ink-faint);
+  }
+  .dot{
+    cursor:pointer;
+    transition:r .12s ease, opacity .12s ease;
+  }
+  .dot.dim{opacity:.12;}
+  .dot.hi{ filter:drop-shadow(0 0 0 rgba(0,0,0,0)); }
+  .name-tag{
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:9.5px;
+    font-weight:600;
+    fill:var(--ink);
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .12s ease;
+  }
+  .name-tag.show{opacity:1;}
+
+  /* tooltip */
+  #tooltip{
+    position:fixed;
+    pointer-events:none;
+    background:var(--ink);
+    color:#fff;
+    padding:10px 13px;
+    border-radius:9px;
+    font-size:12px;
+    line-height:1.6;
+    z-index:50;
+    opacity:0;
+    transform:translate(-50%,-115%);
+    transition:opacity .1s ease;
+    white-space:nowrap;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  #tooltip b{font-family:'Manrope',sans-serif;}
+  #tooltip .tt-sub{color:#B8C0CC;font-size:11px;}
+
+  /* table */
+  .table-card{margin-top:20px;}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12.8px;
+  }
+  th{
+    text-align:left;
+    font-size:11px;
+    color:var(--ink-faint);
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    padding:9px 10px;
+    border-bottom:1px solid var(--line-strong);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  th:hover{color:var(--ink);}
+  th .arrow{opacity:.4; margin-left:3px;}
+  td{
+    padding:9px 10px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  td.num{font-family:'IBM Plex Mono',monospace; font-size:12.3px;}
+  tr.tbl-row{transition:background .1s ease;}
+  tr.tbl-row:hover{background:#F5F8FC;}
+  .n-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+  .n-badge .dot-swatch{width:8px;height:8px;}
+  .neg{color:#A0392F;}
+  .pos{color:#1E5F3A;}
+  .empty-row td{
+    text-align:center;
+    color:var(--ink-faint);
+    padding:28px;
+  }
+
+  footer{
+    margin-top:26px;
+    font-size:11.5px;
+    color:var(--ink-faint);
+    line-height:1.7;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Rater-Bias-Adjusted Review</p>
+  <h1>성과·역량 매트릭스</h1>
+  <p class="sub">
+    평가자별 채점 성향을 보정하여 리더별 상대적 역량과 성과를 비교한 결과입니다. <br><br>
+가로축은 역량, 세로축은 성과의 상대적 수준을 나타내며, <br>위치를 통해 각 리더의 강점과 개선 영역을 한눈에 확인할 수 있습니다.<br>
+점의 색상은 평가자 수를 의미하며, 평가자 수가 많을수록 해석의 신뢰도가 높습니다.
+  </p>
+ 
+  <div class="stats" id="statsStrip"></div>
+
+  <div class="main">
+    <div class="card">
+      <div class="card-head-row">
+        <div>
+          <h2>9-Box 매트릭스</h2>
+          <div class="cardsub">점에 마우스를 올리면 이름과 상세 값을 볼 수 있습니다</div>
+        </div>
+        <label class="switch-row">
+          <span class="switch">
+            <input type="checkbox" id="showNamesToggle" >
+            <span class="slider"></span>
+          </span>
+          <span class="switch-label">이름 표시</span>
+        </label>
+      </div>
+      <svg id="matrix" viewBox="0 0 760 640"></svg>
+    </div>
+
+    <div class="card">
+      <h2>필터</h2>
+      <div class="cardsub">매트릭스와 아래 표에 동시에 적용됩니다</div>
+
+      <div class="field-group">
+        <label>평가자 수 (신뢰도)</label>
+        <div class="legend-row" id="legendChips"></div>
+      </div>
+
+      <div class="field-group">
+        <label>본부</label>
+        <select id="deptFilter"></select>
+      </div>
+
+      <div class="field-group">
+        <label>성명 검색</label>
+        <input type="text" id="nameSearch" placeholder="이름 입력...">
+      </div>
+
+
+
+      <div class="hint-box">
+  <b>사용 방법</b><br>
+  • 이름 표시를 켜면 리더명이 표시됩니다.<br>
+  • 점에 마우스를 올리면 상세 정보를 확인할 수 있습니다.<br>
+  • 필터를 적용하면 매트릭스와 하단 명단에 동일하게 반영됩니다.
+
+  <br><br>
+        <b>읽는 법</b><br>
+        오른쪽 위로 갈수록 역량·성과 모두 평균 대비 높음, 왼쪽 아래로 갈수록 낮음을 의미합니다. 진한 파랑 점일수록 3명의 평가자 평균으로, 회색 점보다 신뢰도가 높습니다.
+        <br><br>
+        <b>*골드 영역: </b>역량과 성과가 모두 상위 1/3에 해당하는 구간 <br> <b>*핑크 영역: </b>역량과 성과가 모두 하위 1/3에 해당하는 구간 <br>
+        골드와 핑크 영역의 경계는 평균선이 아니라, 실제 34명의 점수 분포를 기준으로 나눈 상위·하위 1/3 기준선입니다.
+      </div>
+    </div>
+  </div>
+
+  <div class="card table-card">
+    <h2>전체 명단</h2>
+    <div class="cardsub">헤더를 클릭하면 정렬됩니다 · 행에 마우스를 올리면 매트릭스에서 해당 점이 표시됩니다</div>
+    <table>
+      <thead>
+        <tr>
+          <th data-key="idx">No.<span class="arrow"></span></th>
+          <th data-key="dept">본부<span class="arrow"></span></th>
+          <th data-key="team">팀<span class="arrow"></span></th>
+          <th data-key="name">성명<span class="arrow"></span></th>
+          <th data-key="comp">역량 표준화<span class="arrow"></span></th>
+          <th data-key="perf">성과 표준화<span class="arrow"></span></th>
+          <th data-key="tier">평가자 수<span class="arrow"></span></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    Z점수 = (평가자가 매긴 점수 − 그 평가자의 평균) ÷ 그 평가자의 표준편차. 여러 평가자에게 평가받은 경우 평가자별 Z점수를 단순평균했습니다.
+    구간 경계(역량 −0.13 / 0.44, 성과 −0.29 / 0.46)는 34명 데이터의 실제 3분위수를 사용했습니다.
+  </footer>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+const DATA = [
+ {idx:1,dept:"SBC브랜드본부",team:"SBC브랜드본부",name:"윤영웅",comp:0.29,perf:0.38,cn:1,pn:1},
+ {idx:2,dept:"SBC브랜드본부",team:"브랜드커뮤니케이션팀",name:"양정연",comp:0.96,perf:1.81,cn:1,pn:1},
+ {idx:3,dept:"개발마케팅본부",team:"개발마케팅본부",name:"강동균",comp:-0.51,perf:-0.51,cn:2,pn:3},
+ {idx:4,dept:"개발마케팅본부",team:"등록팀",name:"안영호",comp:0.42,perf:-0.29,cn:3,pn:3},
+ {idx:5,dept:"개발마케팅본부",team:"전략마케팅팀",name:"김선보",comp:0.59,perf:0.58,cn:2,pn:2},
+ {idx:6,dept:"경영관리본부",team:"경영관리본부",name:"장민규",comp:-0.13,perf:0.34,cn:2,pn:2},
+ {idx:7,dept:"경영관리본부",team:"경영관리팀",name:"김종훈",comp:-0.78,perf:-0.44,cn:2,pn:2},
+ {idx:8,dept:"경영관리본부",team:"미래성장팀",name:"김혜진",comp:0.05,perf:0.06,cn:2,pn:2},
+ {idx:9,dept:"경영관리본부",team:"재경팀",name:"김정섭",comp:-0.60,perf:-0.63,cn:1,pn:1},
+ {idx:10,dept:"경영지원실",team:"경영지원실",name:"김도희",comp:0.44,perf:-0.09,cn:1,pn:1},
+ {idx:11,dept:"생산본부",team:"관리팀",name:"김민오",comp:-0.34,perf:0.18,cn:1,pn:1},
+ {idx:12,dept:"생산본부",team:"생산본부",name:"강두영",comp:0.44,perf:0.46,cn:1,pn:1},
+ {idx:13,dept:"생산본부",team:"생산팀",name:"마은기",comp:0.39,perf:0.61,cn:2,pn:2},
+ {idx:14,dept:"연구본부",team:"바이오아그로팀",name:"고해랑",comp:-1.75,perf:-1.28,cn:3,pn:2},
+ {idx:15,dept:"연구본부",team:"생물팀",name:"류성복",comp:-0.41,perf:-0.12,cn:3,pn:3},
+ {idx:16,dept:"연구본부",team:"연구본부",name:"윤기섭",comp:1.10,perf:0.01,cn:2,pn:2},
+ {idx:17,dept:"연구본부",team:"제제팀",name:"장인혁",comp:1.24,perf:1.08,cn:2,pn:3},
+ {idx:18,dept:"영업본부",team:"강원영업팀",name:"이제선",comp:0.66,perf:0.63,cn:1,pn:1},
+ {idx:19,dept:"영업본부",team:"경기영업팀",name:"이형권",comp:1.22,perf:1.27,cn:1,pn:1},
+ {idx:20,dept:"영업본부",team:"경남영업팀",name:"안도현",comp:0.44,perf:-0.09,cn:1,pn:1},
+ {idx:21,dept:"영업본부",team:"경북남부영업팀",name:"정현택",comp:0.70,perf:1.27,cn:1,pn:1},
+ {idx:22,dept:"영업본부",team:"경북북부영업팀",name:"강동묵",comp:-0.08,perf:-0.36,cn:1,pn:1},
+ {idx:23,dept:"영업본부",team:"영업본부",name:"은원만",comp:-0.81,perf:-0.77,cn:2,pn:2},
+ {idx:24,dept:"영업본부",team:"영업운영팀",name:"허화",comp:0.52,perf:0.10,cn:3,pn:3},
+ {idx:25,dept:"영업본부",team:"전남영업팀",name:"추영선",comp:0.18,perf:0.46,cn:1,pn:1},
+ {idx:26,dept:"영업본부",team:"전북영업팀",name:"백종진",comp:0.96,perf:1.00,cn:1,pn:1},
+ {idx:27,dept:"영업본부",team:"충남영업팀",name:"김규식",comp:-0.86,perf:-0.36,cn:1,pn:1},
+ {idx:28,dept:"영업본부",team:"충북영업팀",name:"박종현",comp:-0.08,perf:1.00,cn:1,pn:1},
+ {idx:29,dept:"윤잇사업본부",team:"윤잇사업본부",name:"손경남",comp:0.66,perf:0.38,cn:1,pn:1},
+ {idx:30,dept:"인사지원본부",team:"구매총무팀",name:"이영훈",comp:-1.38,perf:-1.17,cn:1,pn:1},
+ {idx:31,dept:"인사지원본부",team:"인사지원본부",name:"현창호",comp:-0.09,perf:-0.43,cn:2,pn:2},
+ {idx:32,dept:"인사지원본부",team:"홍보지원팀",name:"김성배",comp:1.08,perf:1.15,cn:3,pn:3},
+ {idx:33,dept:"PH사업본부",team:"PH사업본부",name:"신문호",comp:-0.54,perf:-1.73,cn:2,pn:2},
+ {idx:34,dept:"PH사업본부",team:"가치혁신팀",name:"김규동",comp:-2.15,perf:-2.14,cn:2,pn:2},
+];
+
+DATA.forEach(d => d.tier = Math.min(d.cn, d.pn));
+
+const TIER_COLOR = {3:"var(--blue-dark)", 2:"var(--blue-mid)", 1:"var(--gray-light)"};
+const TIER_COLOR_HEX = {3:"#1E3A5F", 2:"#5B8DBE", 1:"#C7CCD3"};
+const TIER_LABEL = {3:"평가자 3명", 2:"평가자 2명", 1:"평가자 1명 (참고)"};
+
+// ---- state ----
+let activeTiers = new Set([1,2,3]);
+let deptChoice = "전체";
+let nameQuery = "";
+let sortKey = "idx";
+let sortDir = 1;
+let hoverId = null;
+let showNames = false;
+
+// ---- stat strip ----
+function renderStats(){
+  const el = document.getElementById('statsStrip');
+  const total = DATA.length;
+  const counts = {1:0,2:0,3:0};
+  DATA.forEach(d=>counts[d.tier]++);
+  el.innerHTML = `
+    <div class="stat">
+      <div class="num">${total}</div>
+      <div class="lbl">전체 인원</div>
+    </div>
+    <div class="stat tier">
+      <div class="num"><span class="dot-swatch" style="background:${TIER_COLOR_HEX[3]}"></span>${counts[3]}</div>
+      <div class="lbl">평가자 3명</div>
+    </div>
+    <div class="stat tier">
+      <div class="num"><span class="dot-swatch" style="background:${TIER_COLOR_HEX[2]}"></span>${counts[2]}</div>
+      <div class="lbl">평가자 2명</div>
+    </div>
+    <div class="stat tier">
+      <div class="num"><span class="dot-swatch" style="background:${TIER_COLOR_HEX[1]}"></span>${counts[1]}</div>
+      <div class="lbl">평가자 1명 (참고)</div>
+    </div>
+  `;
+}
+
+// ---- legend chips ----
+function renderLegend(){
+  const el = document.getElementById('legendChips');
+  el.innerHTML = "";
+  [3,2,1].forEach(t=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (activeTiers.has(t) ? '' : ' off');
+    chip.innerHTML = `<span class="dot-swatch" style="background:${TIER_COLOR_HEX[t]}"></span>${TIER_LABEL[t]}`;
+    chip.onclick = () => {
+      if(activeTiers.has(t)) activeTiers.delete(t); else activeTiers.add(t);
+      renderLegend(); renderAll();
+    };
+    el.appendChild(chip);
+  });
+}
+
+// ---- dept dropdown ----
+function renderDeptOptions(){
+  const el = document.getElementById('deptFilter');
+  const depts = ["전체", ...new Set(DATA.map(d=>d.dept))];
+  el.innerHTML = depts.map(d=>`<option value="${d}">${d}</option>`).join('');
+  el.onchange = () => { deptChoice = el.value; renderAll(); };
+}
+
+document.getElementById('nameSearch').addEventListener('input', (e)=>{
+  nameQuery = e.target.value.trim();
+  renderAll();
+});
+
+document.getElementById('showNamesToggle').addEventListener('change', (e)=>{
+  showNames = e.target.checked;
+  renderDots();
+});
+
+function filteredData(){
+  return DATA.filter(d =>
+    activeTiers.has(d.tier) &&
+    (deptChoice === "전체" || d.dept === deptChoice) &&
+    (nameQuery === "" || d.name.includes(nameQuery))
+  );
+}
+
+// ---- matrix (SVG) ----
+const M = {left:56, right:26, top:26, bottom:56};
+const W = 760, H = 640;
+const plotW = W - M.left - M.right;
+const plotH = H - M.top - M.bottom;
+
+const xDomain = [-2.4, 1.6];
+const yDomain = [-2.4, 2.1];
+const xCuts = [-0.13, 0.44];
+const yCuts = [-0.29, 0.46];
+
+function sx(v){ return M.left + (v - xDomain[0])/(xDomain[1]-xDomain[0]) * plotW; }
+function sy(v){ return M.top + (1 - (v - yDomain[0])/(yDomain[1]-yDomain[0])) * plotH; }
+
+function buildMatrixStatic(){
+  const svg = document.getElementById('matrix');
+  let s = "";
+
+  // zone backgrounds (3x3)
+  const xBounds = [xDomain[0], xCuts[0], xCuts[1], xDomain[1]];
+  const yBounds = [yDomain[0], yCuts[0], yCuts[1], yDomain[1]];
+  for(let i=0;i<3;i++){
+    for(let j=0;j<3;j++){
+      const x0 = sx(xBounds[i]), x1 = sx(xBounds[i+1]);
+      const y0 = sy(yBounds[j+1]), y1 = sy(yBounds[j]);
+      let fill = "transparent";
+      if(i===2 && j===2) fill = "var(--gold-tint)";      // 고역량 x 고성과
+      if(i===0 && j===0) fill = "var(--red-tint)";       // 저역량 x 저성과
+      s += `<rect x="${x0}" y="${y0}" width="${x1-x0}" height="${y1-y0}" fill="${fill}" />`;
+    }
+  }
+
+  // grid lines at cuts + domain box
+  const allX = [xDomain[0], xCuts[0], xCuts[1], xDomain[1]];
+  const allY = [yDomain[0], yCuts[0], yCuts[1], yDomain[1]];
+  allX.forEach(v=>{
+    s += `<line x1="${sx(v)}" y1="${M.top}" x2="${sx(v)}" y2="${M.top+plotH}" stroke="var(--line)" stroke-width="1"/>`;
+  });
+  allY.forEach(v=>{
+    s += `<line x1="${M.left}" y1="${sy(v)}" x2="${M.left+plotW}" y2="${sy(v)}" stroke="var(--line)" stroke-width="1"/>`;
+  });
+
+  // zero reference lines = mean (Z=0 by definition) — drawn bold & solid, distinct from the tercile zone lines
+  s += `<line x1="${sx(0)}" y1="${M.top}" x2="${sx(0)}" y2="${M.top+plotH}" stroke="#33404F" stroke-width="2.2"/>`;
+  s += `<line x1="${M.left}" y1="${sy(0)}" x2="${M.left+plotW}" y2="${sy(0)}" stroke="#33404F" stroke-width="2.2"/>`;
+  s += `<text class="tick-label" x="${sx(0)+6}" y="${M.top+12}" fill="#33404F" font-weight="700">평균</text>`;
+
+  // axis labels
+  s += `<text class="axis-label" x="${M.left+plotW/2}" y="${H-14}" text-anchor="middle">역량 표준화 평균 →</text>`;
+  s += `<text class="axis-label" x="18" y="${M.top+plotH/2}" text-anchor="middle" transform="rotate(-90 18 ${M.top+plotH/2})">성과 표준화 평균 →</text>`;
+
+  // tick labels
+  [-2,-1,0,1].forEach(v=>{
+    if(v>=xDomain[0]&&v<=xDomain[1]) s += `<text class="tick-label" x="${sx(v)}" y="${M.top+plotH+16}" text-anchor="middle">${v}</text>`;
+  });
+  [-2,-1,0,1,2].forEach(v=>{
+    if(v>=yDomain[0]&&v<=yDomain[1]) s += `<text class="tick-label" x="${M.left-10}" y="${sy(v)+3}" text-anchor="end">${v}</text>`;
+  });
+
+// zone labels
+s += `<text class="zone-label" x="${sx(-2.35)}" y="${sy(1.75)}" text-anchor="start">성과 상대적 우위</text>`;
+s += `<text class="zone-label" x="${sx(1.55)}" y="${sy(1.75)}" text-anchor="end">핵심 인재</text>`;
+s += `<text class="zone-label" x="${sx(-2.35)}" y="${sy(-2.15)}" text-anchor="start">집중 관리 필요</text>`;
+s += `<text class="zone-label" x="${sx(1.55)}" y="${sy(-2.15)}" text-anchor="end">역량 상대적 우위</text>`;
+
+svg.innerHTML = s;
+}
+
+function renderDots(){
+  const svg = document.getElementById('matrix');
+  // remove old dot group
+  const old = svg.querySelector('#dotLayer');
+  if(old) old.remove();
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+  g.setAttribute("id","dotLayer");
+
+  const visibleIds = new Set(filteredData().map(d=>d.idx));
+
+  DATA.forEach(d=>{
+    const cx = sx(d.comp), cy = sy(d.perf);
+    const visible = visibleIds.has(d.idx);
+    const isHover = hoverId === d.idx;
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    circle.setAttribute("cx", cx);
+    circle.setAttribute("cy", cy);
+    circle.setAttribute("r", isHover ? 8.5 : 6);
+    circle.setAttribute("fill", TIER_COLOR_HEX[d.tier]);
+    circle.setAttribute("stroke", "#fff");
+    circle.setAttribute("stroke-width", d.tier===1 ? 1 : 1.4);
+    circle.setAttribute("class", "dot" + (visible ? "" : " dim") + (isHover ? " hi" : ""));
+    circle.setAttribute("data-id", d.idx);
+
+    circle.addEventListener('mouseenter', (e)=>{
+      hoverId = d.idx;
+      renderDots();
+      showTooltip(e, d);
+    });
+    circle.addEventListener('mousemove', (e)=> showTooltip(e, d));
+    circle.addEventListener('mouseleave', ()=>{
+      hoverId = null;
+      renderDots();
+      hideTooltip();
+    });
+
+    g.appendChild(circle);
+
+    if(visible && (showNames || isHover)){
+      const label = document.createElementNS("http://www.w3.org/2000/svg","text");
+      label.setAttribute("x", cx);
+      label.setAttribute("y", cy - (isHover ? 13 : 10));
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("class", "name-tag show");
+      label.setAttribute("paint-order", "stroke");
+      label.setAttribute("stroke", "#fff");
+      label.setAttribute("stroke-width", "3");
+      label.textContent = d.name;
+      g.appendChild(label);
+    }
+  });
+
+  svg.appendChild(g);
+}
+
+function showTooltip(e, d){
+  const tt = document.getElementById('tooltip');
+  tt.innerHTML = `<b>${d.name}</b> · ${d.team}<br>
+    <span class="tt-sub">역량 Z ${d.comp.toFixed(2)} (n=${d.cn}) · 성과 Z ${d.perf.toFixed(2)} (n=${d.pn})</span>`;
+  tt.style.left = e.clientX + "px";
+  tt.style.top = e.clientY + "px";
+  tt.style.opacity = 1;
+}
+function hideTooltip(){
+  document.getElementById('tooltip').style.opacity = 0;
+}
+
+// ---- table ----
+function renderTable(){
+  const body = document.getElementById('tableBody');
+  let rows = filteredData();
+
+  rows.sort((a,b)=>{
+    let av = a[sortKey], bv = b[sortKey];
+    if(sortKey === 'tier'){ av = a.tier; bv = b.tier; }
+    if(typeof av === 'string') return av.localeCompare(bv) * sortDir;
+    return (av - bv) * sortDir;
+  });
+
+  if(rows.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="7">조건에 맞는 인원이 없습니다</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = rows.map(d=>{
+    const compClass = d.comp >= 0 ? 'pos' : 'neg';
+    const perfClass = d.perf >= 0 ? 'pos' : 'neg';
+    return `<tr class="tbl-row" data-id="${d.idx}">
+      <td class="num">${d.idx}</td>
+      <td>${d.dept}</td>
+      <td>${d.team}</td>
+      <td><b>${d.name}</b></td>
+      <td class="num ${compClass}">${d.comp.toFixed(2)}</td>
+      <td class="num ${perfClass}">${d.perf.toFixed(2)}</td>
+      <td><span class="n-badge"><span class="dot-swatch" style="background:${TIER_COLOR_HEX[d.tier]}"></span>역량 ${d.cn} · 성과 ${d.pn}</span></td>
+    </tr>`;
+  }).join('');
+
+  body.querySelectorAll('tr.tbl-row').forEach(row=>{
+    const id = Number(row.dataset.id);
+    row.addEventListener('mouseenter', ()=>{ hoverId = id; renderDots(); });
+    row.addEventListener('mouseleave', ()=>{ hoverId = null; renderDots(); });
+  });
+}
+
+document.querySelectorAll('th[data-key]').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if(sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+    document.querySelectorAll('th .arrow').forEach(a=>a.textContent='');
+    th.querySelector('.arrow').textContent = sortDir === 1 ? '▲' : '▼';
+    renderTable();
+  });
+});
+
+function renderAll(){
+  renderDots();
+  renderTable();
+}
+
+// ---- init ----
+renderStats();
+renderLegend();
+renderDeptOptions();
+buildMatrixStatic();
+renderAll();
+</script>
+</body>
+</html>
