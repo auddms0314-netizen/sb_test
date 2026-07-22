@@ -259,6 +259,58 @@
     color:#6B5A2E;
   }
 
+
+  /* accordion guide */
+  .info-box{
+    background:#F8F6F0;
+    border:1px solid #EBE3D0;
+    border-radius:10px;
+    margin-bottom:10px;
+    overflow:hidden;
+    color:#6B5A2E;
+  }
+  .info-box:last-child{margin-bottom:0;}
+  .info-box summary{
+    position:relative;
+    cursor:pointer;
+    padding:12px 38px 12px 13px;
+    font-size:12.5px;
+    font-weight:700;
+    list-style:none;
+    user-select:none;
+  }
+  .info-box summary::-webkit-details-marker{display:none;}
+  .info-box summary::after{
+    content:"＋";
+    position:absolute;
+    right:13px;
+    top:50%;
+    transform:translateY(-50%);
+    font-size:16px;
+    font-weight:500;
+    color:#8A7440;
+  }
+  .info-box[open] summary::after{content:"−";}
+  .info-box[open] summary{
+    border-bottom:1px solid #EBE3D0;
+  }
+  .info-content{
+    padding:12px 13px 14px;
+    font-size:12px;
+    line-height:1.7;
+  }
+  .info-content .section-title{
+    display:block;
+    margin-bottom:3px;
+    color:#5F4D22;
+  }
+  .info-note{
+    display:block;
+    margin-top:10px;
+    font-size:11.5px;
+    color:#8A7440;
+  }
+
   /* svg matrix */
   svg{width:100%;height:auto;display:block;}
   .zone-label{
@@ -419,21 +471,63 @@
         <input type="text" id="nameSearch" placeholder="이름 입력...">
       </div>
 
+      <details class="info-box" open>
+        <summary>사용 방법</summary>
+        <div class="info-content">
+          • <b>이름 표시</b>를 켜면 매트릭스에 리더명이 표시됩니다.<br>
+          • 점에 마우스를 올리면 개인별 상세 정보를 확인할 수 있습니다.<br>
+          • 필터를 적용하면 매트릭스와 하단 명단에 동일하게 반영됩니다.
+        </div>
+      </details>
 
+      <details class="info-box">
+        <summary>평가 기준</summary>
+        <div class="info-content">
+          <b class="section-title">역량(How)</b>
+          • 목표와 방향 제시<br>
+          • 의사결정<br>
+          • 소통 및 협업<br>
+          • 실행관리<br>
+          • 변화·개선 추진
 
-      <div class="hint-box">
-  <b>사용 방법</b><br>
-  • 이름 표시를 켜면 리더명이 표시됩니다.<br>
-  • 점에 마우스를 올리면 상세 정보를 확인할 수 있습니다.<br>
-  • 필터를 적용하면 매트릭스와 하단 명단에 동일하게 반영됩니다.
+          <br><br>
 
-  <br><br>
-        <b>읽는 법</b><br>
-        오른쪽 위로 갈수록 역량·성과 모두 평균 대비 높음, 왼쪽 아래로 갈수록 낮음을 의미합니다. 진한 파랑 점일수록 3명의 평가자 평균으로, 회색 점보다 신뢰도가 높습니다.
-        <br><br>
-        <b>*골드 영역: </b>역량과 성과가 모두 상위 1/3에 해당하는 구간 <br> <b>*핑크 영역: </b>역량과 성과가 모두 하위 1/3에 해당하는 구간 <br>
-        골드와 핑크 영역의 경계는 평균선이 아니라, 실제 34명의 점수 분포를 기준으로 나눈 상위·하위 1/3 기준선입니다.
-      </div>
+          <b class="section-title">성과(What)</b>
+          • 성과 창출<br>
+          • 계획 대비 실행<br>
+          • 문제 해결<br>
+          • 조직 운영<br>
+          • 신뢰 확보
+
+          <span class="info-note">
+            ※ 역량은 <b>어떻게 일하는가(How)</b>, 성과는 <b>무엇을 달성했는가(What)</b>를 의미합니다.
+          </span>
+        </div>
+      </details>
+
+      <details class="info-box">
+        <summary>읽는 법</summary>
+        <div class="info-content">
+          • 오른쪽 위로 갈수록 역량과 성과가 모두 평균 대비 높음을 의미합니다.<br>
+          • 왼쪽 아래로 갈수록 역량과 성과가 모두 평균 대비 낮음을 의미합니다.<br>
+          • 점의 색상은 평가자 수를 의미하며, 진한 파랑일수록 결과의 신뢰도가 높습니다.
+
+          <br><br>
+
+          <b>골드 영역</b><br>
+          역량과 성과가 모두 상위 1/3에 해당하는 구간입니다.
+
+          <br><br>
+
+          <b>핑크 영역</b><br>
+          역량과 성과가 모두 하위 1/3에 해당하는 구간입니다.
+
+          <span class="info-note">
+            ※ 골드와 핑크 영역의 경계는 평균선이 아니라 실제 34명의 점수 분포를 기준으로 산출한 상·하위 1/3 기준선입니다.
+          </span>
+        </div>
+      </details>
+
     </div>
   </div>
 
