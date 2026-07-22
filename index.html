@@ -773,32 +773,41 @@ function renderDots(){
     circle.setAttribute("class", "dot" + (visible ? "" : " dim") + (isHover ? " hi" : ""));
     circle.setAttribute("data-id", d.idx);
 
-    circle.addEventListener('mouseenter', (e)=>{
-      hoverId = d.idx;
-      renderDots();
-      showTooltip(e, d);
-    });
-    circle.addEventListener('mousemove', (e)=> showTooltip(e, d));
-    circle.addEventListener('mouseleave', ()=>{
-      hoverId = null;
-      renderDots();
-      hideTooltip();
-    });
-
     g.appendChild(circle);
 
-    if(visible && (showNames || isHover)){
-      const label = document.createElementNS("http://www.w3.org/2000/svg","text");
+    let label = null;
+    if(visible){
+      label = document.createElementNS("http://www.w3.org/2000/svg","text");
       label.setAttribute("x", cx);
-      label.setAttribute("y", cy - (isHover ? 13 : 10));
+      label.setAttribute("y", cy - 10);
       label.setAttribute("text-anchor", "middle");
-      label.setAttribute("class", "name-tag show");
+      label.setAttribute("class", "name-tag" + (showNames ? " show" : ""));
       label.setAttribute("paint-order", "stroke");
       label.setAttribute("stroke", "#fff");
       label.setAttribute("stroke-width", "3");
       label.textContent = d.name;
       g.appendChild(label);
     }
+
+    circle.addEventListener('mouseenter', (e)=>{
+      hoverId = d.idx;
+      circle.setAttribute("r", 8.5);
+      if(label){
+        label.setAttribute("y", cy - 13);
+        label.classList.add("show");
+      }
+      showTooltip(e, d);
+    });
+    circle.addEventListener('mousemove', (e)=> showTooltip(e, d));
+    circle.addEventListener('mouseleave', ()=>{
+      hoverId = null;
+      circle.setAttribute("r", 6);
+      if(label){
+        label.setAttribute("y", cy - 10);
+        if(!showNames) label.classList.remove("show");
+      }
+      hideTooltip();
+    });
   });
 
   svg.appendChild(g);
